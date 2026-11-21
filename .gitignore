@@ -1,0 +1,11 @@
+# Build output (Makefile: BUILD_DIR := build)
+build/
+
+# Compiled object files and libraries
+*.o
+*.a
+*.so
+
+# Core dumps from crash debugging
+core
+core.*
