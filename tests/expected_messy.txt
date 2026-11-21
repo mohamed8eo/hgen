@@ -1,0 +1,12 @@
+STRUCT typedef struct {
+  int *table;
+  int len;
+} KmpTable;
+STRUCT struct Counter {
+  int comparisons;
+};
+FUNC KmpTable *kmp_build(const char *pat, const char *test, const char *test3, char for_test_only);
+FUNC int kmp_search(const KmpTable *t, const char *pat, const char *text);
+FUNC void kmp_free(KmpTable *t);
+Header c_path: tests/messy.h
+FILE Header: HGEN_MESSY_H

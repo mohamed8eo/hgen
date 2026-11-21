@@ -1,0 +1,12 @@
+STRUCT typedef struct {
+  int *table;
+  int len;
+} KmpTable;
+STRUCT struct Counter {
+  int comparisons;
+};
+FUNC KmpTable *kmp_build(const char *pat);
+FUNC int kmp_search(const KmpTable *t, const char *pat, const char *text);
+FUNC void kmp_free(KmpTable *t);
+Header c_path: tests/kmp_search.h
+FILE Header: HGEN_KMP_SEARCH_H

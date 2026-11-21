@@ -21,7 +21,8 @@ static void print_debug(const char *msg) {
 }
 
 /* builds the failure table for a pattern */
-KmpTable *kmp_build(const char *pat) {
+KmpTable *kmp_build(const char *pat, const char *test, const char *test3,
+                    char for_test_only) {
   int m = (int)strlen(pat);
   KmpTable *t = malloc(sizeof *t);
   t->table = calloc(m, sizeof(int));
@@ -66,7 +67,7 @@ void kmp_free(KmpTable *t) {
 
 int main(void) {
   const char *pat = "abab";
-  KmpTable *t = kmp_build(pat);
+  KmpTable *t = kmp_build(pat, "3", "3", 3);
   printf("found at %d\n", kmp_search(t, pat, "xxababxx"));
   kmp_free(t);
   return 0;
