@@ -1,10 +1,16 @@
 #include "header.h"
+#include "buf.h"
+#include "scan.h"
 #include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define BEGIN_MARK                                                             \
+  "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
+#define END_MARK "/* --- END PROTOTYPES --- */\n"
 
 /* Build a valid C identifier from the basename of a .h path:
    "dir/kmp.h" -> "HGEN_KMP_H". Caller owns the result. */
@@ -32,7 +38,6 @@ static char *guard_name(const char *h_path) {
   }
   guard[prefix_len + name_len] = '\0';
 
-  printf("FILE Header: %s\n", guard);
   return guard;
 }
 
@@ -55,14 +60,81 @@ char *header_path(const char *c_path, size_t path_len) {
   memcpy(h_path, c_path, path_len);
   h_path[path_len] = '\0';
   h_path[path_len - 1] = 'h';
-  printf("Header c_path: %s\n", h_path);
-
-  char *guard = guard_name(h_path);
-  if (guard == NULL) {
-    free(h_path);
-    return NULL;
-  }
-  free(guard);
 
   return h_path;
+}
+
+int header_build(const char *src, const char *h_path, const ItemList *list,
+                 Buf *out) {
+  (void)src; /* needed by a later chapter */
+
+  char *guard = guard_name(h_path);
+  if (guard == NULL)
+    return -1;
+
+  // header
+  if (buf_append(out, "#ifndef ") == -1)
+    goto fail;
+  if (buf_append(out, guard) == -1)
+    goto fail;
+  if (buf_append(out, "\n#define ") == -1)
+    goto fail;
+  if (buf_append(out, guard) == -1)
+    goto fail;
+  if (buf_append(out, "\n\n") == -1)
+    goto fail;
+  if (buf_append(out, BEGIN_MARK) == -1)
+    goto fail;
+
+  for (size_t i = 0; i < list->len; i++) {
+    const Item *ite = &list->items[i];
+    switch (ite->kind) {
+    case ITEM_FUNC:
+      if (buf_append(out, ite->text) == -1)
+        goto fail;
+      if (buf_append(out, "\n") == -1)
+        goto fail;
+      break;
+    case ITEM_STRUCT:
+    case ITEM_SKIP:
+      break;
+    }
+  }
+
+  if (buf_append(out, END_MARK) == -1)
+    goto fail;
+  if (buf_append(out, "\n#endif /* ") == -1)
+    goto fail;
+  if (buf_append(out, guard) == -1)
+    goto fail;
+  if (buf_append(out, " */\n") == -1)
+    goto fail;
+
+  free(guard);
+  return 0;
+
+fail:
+  free(guard);
+  return -1;
+}
+
+int write_file(const char *path, const char *text) {
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL) {
+    perror("fopen");
+    return -1;
+  }
+
+  if (fputs(text, fp) == EOF) {
+    perror("fputs");
+    fclose(fp);
+    return -1;
+  }
+
+  if (fclose(fp) != 0) {
+    perror("fclose");
+    return -1;
+  }
+
+  return 0;
 }

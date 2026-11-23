@@ -9,7 +9,7 @@ typedef enum { ITEM_FUNC, ITEM_STRUCT, ITEM_SKIP } Kind;
 typedef struct {
   Kind kind;
   size_t start, end; /* byte range in the stripped source: [start, end) */
-  char *text;
+  char *text;        // Only contain the function signature.
 } Item;
 
 typedef struct {

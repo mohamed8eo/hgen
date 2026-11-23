@@ -2,27 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "buf.h"
 #include "fileio.h"
 #include "header.h"
 #include "scan.h"
 #include "strip.h"
-
-static void print_items(const ItemList *list, const char *src) {
-  for (size_t i = 0; i < list->len; i++) {
-    const Item *item = &list->items[i];
-    switch (item->kind) {
-    case ITEM_FUNC:
-      printf("FUNC %s\n", item->text);
-      break;
-    case ITEM_STRUCT:
-      printf("STRUCT %.*s\n", (int)(item->end - item->start),
-             src + item->start);
-      break;
-    case ITEM_SKIP:
-      break; /* skipped declarations are not shown */
-    }
-  }
-}
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -48,18 +32,51 @@ int main(int argc, char *argv[]) {
 
   ItemList items = {0};
   scan(result, &items);
-  print_items(&items, buf);
-  itemlist_free(&items);
 
-  char *h_path = header_path(path, path_len);
-  if (h_path == NULL) {
-    free(buf);
+  char *hpath = header_path(path, path_len);
+  if (hpath == NULL) {
+    fprintf(stderr, "not a .c file\n");
+    itemlist_free(&items);
     free(result);
+    free(buf);
     return EXIT_FAILURE;
   }
-  free(h_path);
 
-  free(buf);
+  FILE *existing = fopen(hpath, "r");
+  if (existing != NULL) {
+    fclose(existing);
+    fprintf(stderr, "Header %s already exists; refusing to overwrite\n", hpath);
+    free(hpath);
+    itemlist_free(&items);
+    free(result);
+    free(buf);
+    return EXIT_SUCCESS;
+  }
+
+  Buf out = {0};
+  if (header_build(result, hpath, &items, &out) != 0) {
+    fprintf(stderr, "header_build failed\n");
+    goto fail;
+  }
+  if (write_file(hpath, out.data) != 0) {
+    fprintf(stderr, "write_file failed\n");
+    goto fail;
+  }
+
+  fputs(out.data, stdout);
+
+  buf_free(&out);
+  itemlist_free(&items);
+  free(hpath);
   free(result);
+  free(buf);
   return EXIT_SUCCESS;
+
+fail:
+  buf_free(&out);
+  itemlist_free(&items);
+  free(hpath);
+  free(result);
+  free(buf);
+  return EXIT_FAILURE;
 }

@@ -19,6 +19,7 @@ TARGET := $(BUILD_DIR)/hgen
 
 TEST_SRCS := tests/test_scan.c tests/test_strip.c tests/test_fileio.c tests/test_header.c
 TEST_BINS := $(patsubst tests/%.c,$(BUILD_DIR)/%,$(TEST_SRCS))
+GEN_HEADERS := tests/kmp_search.h tests/messy.h
 
 .PHONY: all clean test
 
@@ -26,6 +27,7 @@ all: $(TARGET)
 
 test: $(TARGET) $(TEST_BINS)
 	@for t in $(TEST_BINS); do ./$$t || exit 1; done
+	@rm -f $(GEN_HEADERS)
 	./$(TARGET) tests/kmp_search.c | diff -u tests/expected_kmp.txt -
 	./$(TARGET) tests/messy.c | diff -u tests/expected_messy.txt -
 
@@ -48,9 +50,9 @@ $(BUILD_DIR)/test_fileio: tests/test_fileio.c tests/test.h $(SRC_DIR)/fileio.c $
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ tests/test_fileio.c $(SRC_DIR)/fileio.c
 
 # test_header includes header.c to reach the file-local guard_name helper.
-$(BUILD_DIR)/test_header: tests/test_header.c tests/test.h $(SRC_DIR)/header.c $(SRC_DIR)/header.h
+$(BUILD_DIR)/test_header: tests/test_header.c tests/test.h $(SRC_DIR)/header.c $(SRC_DIR)/header.h $(SRC_DIR)/buf.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ tests/test_header.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ tests/test_header.c $(SRC_DIR)/buf.c
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(OBJ_DIR)

@@ -14,14 +14,15 @@ Working:
   literals (newlines are kept so line positions are preserved).
 - Skipping preprocessor directives, tracking brace depth to find top-level
   declarations, and splitting declarations on `;`.
+- Generating a header containing only public function prototypes, and writing
+  it to disk if it does not already exist.
+- Printing the generated header to stdout.
 
 Not implemented yet:
 
-- Writing an actual header file. `src/header.c` and `src/buf.c` are currently
-  empty placeholders.
-- Telling public declarations from private ones: `static` helpers and
-  file-local structs are printed today just like public functions.
-- An automated test suite. `tests/` contains sample inputs, not runnable tests.
+- Telling public structs from private ones: no structs are written to the
+  header yet, even when a public prototype uses one.
+- Replacing the contents of the generated block on an existing header.
 
 ## Building
 
@@ -45,22 +46,28 @@ For example, running it on the included fixture:
 
 ```console
 $ ./build/hgen tests/kmp_search.c
-typedef struct 
-struct Counter 
-static void print_debug(const char *msg) 
-KmpTable *kmp_build(const char *pat) 
-int kmp_search(const KmpTable *t, const char *pat, const char *text) 
-void kmp_free(KmpTable *t) 
-int main(void) 
+#ifndef HGEN_KMP_SEARCH_H
+#define HGEN_KMP_SEARCH_H
+
+/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */
+KmpTable *kmp_build(const char *pat);
+int kmp_search(const KmpTable *t, const char *pat, const char *text);
+void kmp_free(KmpTable *t);
+/* --- END PROTOTYPES --- */
+
+#endif /* HGEN_KMP_SEARCH_H */
 ```
+
+The same text is written to `tests/kmp_search.h`. If that file already exists,
+the tool refuses to overwrite it and prints a message to stderr.
 
 ## Project layout
 
 - `src/main.c` — CLI entry point; reads the file, strips it, scans it.
 - `src/fileio.c` — reads a whole file into a NUL-terminated buffer.
 - `src/strip.c` — comment/literal stripping state machine.
-- `src/scan.c` — top-level declaration scanner; prints to stdout.
-- `src/header.c`, `src/buf.c` — placeholders for future header generation.
+- `src/scan.c` — top-level declaration scanner.
+- `src/header.c`, `src/buf.c` — header text builder and growable output buffer.
 - `tests/kmp_search.c`, `tests/messy.c` — sample inputs with comments,
   literals, braces inside strings, and a signature split over two lines.
 
