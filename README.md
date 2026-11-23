@@ -2,8 +2,7 @@
 
 A small, work-in-progress C header generator. Given a C source file, `hgen`
 strips comments and string/char literals, finds the top-level declarations, and
-prints them to stdout. The intended end goal is to generate a matching `.h`
-file from them.
+generates a matching `.h` file containing the public function prototypes.
 
 ## Current state
 
@@ -61,6 +60,12 @@ void kmp_free(KmpTable *t);
 The same text is written to `tests/kmp_search.h`. If that file already exists,
 the tool refuses to overwrite it and prints a message to stderr.
 
+The include guard is derived from the header's basename with a deliberate
+`HGEN_` prefix: `tests/kmp_search.c` produces `HGEN_KMP_SEARCH_H`. The prefix
+avoids collisions with user-written guards and keeps the guard a valid C
+identifier even when the filename starts with a digit (`1counter.c` produces
+`HGEN_1COUNTER_H`).
+
 ## Project layout
 
 - `src/main.c` — CLI entry point; reads the file, strips it, scans it.
@@ -73,9 +78,7 @@ the tool refuses to overwrite it and prints a message to stderr.
 
 ## Known limitations
 
-- Only one input file per invocation, and output goes to stdout; no `.h` is
-  written.
-- `static` functions, private structs, and `main` are all included in the
-  output.
+- Only one input file per invocation.
+- An existing header is never updated; the tool refuses to overwrite it.
 - No special handling yet for multi-line macros, complex function pointers, or
   declarations spanning preprocessor conditionals.

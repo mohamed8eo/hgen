@@ -1,5 +1,6 @@
 #include "strip.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,6 +16,7 @@ char *strip_comments_and_literals(const char *src) {
   size_t len = strlen(src);
   char *result = malloc(len + 1);
   if (result == NULL) {
+    perror("malloc");
     return NULL;
   }
 

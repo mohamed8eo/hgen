@@ -13,7 +13,9 @@
 #define END_MARK "/* --- END PROTOTYPES --- */\n"
 
 /* Build a valid C identifier from the basename of a .h path:
-   "dir/kmp.h" -> "HGEN_KMP_H". Caller owns the result. */
+   "dir/kmp.h" -> "HGEN_KMP_H". Caller owns the result.
+   The HGEN_ prefix is deliberate: it avoids collisions with user guards and
+   keeps the identifier valid even when the filename starts with a digit. */
 static char *guard_name(const char *h_path) {
   if (h_path == NULL)
     return NULL;

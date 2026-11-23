@@ -59,6 +59,14 @@ int main(void) {
     }
   }
   {
+    char *g = guard_name("dir/1counter.h");
+    CHECK(g != NULL);
+    if (g != NULL) {
+      CHECK_STR(g, "HGEN_1COUNTER_H");
+      free(g);
+    }
+  }
+  {
     char *g = guard_name("dir/");
     CHECK(g != NULL);
     if (g != NULL) {
