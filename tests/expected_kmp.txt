@@ -2,6 +2,11 @@
 #define HGEN_KMP_SEARCH_H
 
 /* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */
+typedef struct {
+  int *table;
+  int len;
+} KmpTable;
+
 KmpTable *kmp_build(const char *pat);
 int kmp_search(const KmpTable *t, const char *pat, const char *text);
 void kmp_free(KmpTable *t);

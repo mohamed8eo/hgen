@@ -53,6 +53,8 @@ int main(int argc, char *argv[]) {
     goto cleanup;
   if (write_file(hpath, out.data) != 0)
     goto cleanup;
+  if (header_move_structs(buf, &items, hpath, path) != 0)
+    goto cleanup;
 
   fputs(out.data, stdout);
   rc = EXIT_SUCCESS;
