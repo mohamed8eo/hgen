@@ -1,5 +1,6 @@
 # Build output (Makefile: BUILD_DIR := build)
 build/
+tests/
 
 # Compiled object files and libraries
 *.o
