@@ -42,3 +42,24 @@ char *read_file(const char *path, size_t *out_len) {
   fclose(fp);
   return buf;
 }
+
+int write_file(const char *path, const char *text) {
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL) {
+    perror("fopen");
+    return -1;
+  }
+
+  if (fputs(text, fp) == EOF) {
+    perror("fputs");
+    fclose(fp);
+    return -1;
+  }
+
+  if (fclose(fp) != 0) {
+    perror("fclose");
+    return -1;
+  }
+
+  return 0;
+}

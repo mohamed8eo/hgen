@@ -9,6 +9,7 @@ typedef struct {
 } Buf;
 
 int buf_append(Buf *b, const char *s); // 0 ok, -1 if realloc fails
+int buf_append_n(Buf *b, const char *s, size_t n);
 void buf_free(Buf *b);
 
 #endif

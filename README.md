@@ -18,8 +18,9 @@ Working:
 - Generating a header with public function prototypes and the struct
   declarations they use (private structs stay in the `.c`), and writing it to
   disk if it does not already exist.
-- Moving those structs out of the `.c` file and adding `#include "file.h"`
-  there, so the source still compiles.
+- Moving those structs out of the `.c` file.
+- Checking whether the `.c` already includes its `.h`; adding
+  `#include "file.h"` only when it is missing, otherwise skipping it.
 - Printing the generated header to stdout.
 
 Not implemented yet:
@@ -32,11 +33,14 @@ Requires a C11 compiler and `make`.
 
 ```sh
 make            # builds build/hgen
+make test       # builds and runs all tests, including golden-header diffs
+make test-sanitize  # same, with AddressSanitizer and UBSan
 make clean      # removes the build directory
 ```
 
 Compilation uses `-Wall -Wextra -Werror -std=c11`. `CC`, `CFLAGS`, `CPPFLAGS`,
-and `LDFLAGS` can be overridden in the usual way.
+and `LDFLAGS` can be overridden in the usual way. `make test` runs the CLI on
+disposable copies of the fixtures, so tracked sources are never modified.
 
 ## Usage
 
@@ -66,9 +70,11 @@ void kmp_free(KmpTable *t);
 ```
 
 The same text is written to `tests/kmp_search.h`, and the public `KmpTable`
-definition is removed from `tests/kmp_search.c` (which gains
-`#include "kmp_search.h"`). If the header already exists, the tool refuses to
-overwrite it and prints a message to stderr; the source is left untouched.
+definition is removed from `tests/kmp_search.c`. The source is then checked for
+an include of its header: `#include "kmp_search.h"` is added only if it is not
+already there, otherwise nothing is inserted. If the header already exists, the
+tool refuses to overwrite it and prints a message to stderr; the source is left
+untouched.
 
 The include guard is derived from the header's basename with a deliberate
 `HGEN_` prefix: `tests/kmp_search.c` produces `HGEN_KMP_SEARCH_H`. The prefix
@@ -80,10 +86,13 @@ identifier even when the filename starts with a digit (`1counter.c` produces
 
 - `src/main.c` — CLI entry point; reads the file, strips it, scans it, then
   writes the header and rewrites the source.
-- `src/fileio.c` — reads a whole file into a NUL-terminated buffer.
+- `src/fileio.c` — reads and writes whole files.
 - `src/strip.c` — comment/literal stripping state machine.
 - `src/scan.c` — top-level declaration scanner.
-- `src/header.c`, `src/buf.c` — header text builder and growable output buffer.
+- `src/structs.c` — decides which structs belong in the header.
+- `src/header.c` — guard generation and header text rendering.
+- `src/source.c` — struct removal and include detection/insertion in the `.c`.
+- `src/buf.c` — growable output buffer.
 - `tests/kmp_search.c`, `tests/messy.c` — sample inputs with comments,
   literals, braces inside strings, and a signature split over two lines.
 
@@ -96,3 +105,6 @@ identifier even when the filename starts with a digit (`1counter.c` produces
   declarations spanning preprocessor conditionals.
 - Structs using `size_t` gain an automatic `#include <stddef.h>`; other types
   needed by an emitted struct must be supplied by the includer.
+- Public/private detection is a heuristic: a struct is considered public when
+  its tag or typedef alias appears in a prototype. A name used coincidentally
+  in both a private struct and a public signature may be moved by mistake.

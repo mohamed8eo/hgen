@@ -6,6 +6,7 @@
 #include "fileio.h"
 #include "header.h"
 #include "scan.h"
+#include "source.h"
 #include "strip.h"
 
 int main(int argc, char *argv[]) {
@@ -53,8 +54,11 @@ int main(int argc, char *argv[]) {
     goto cleanup;
   if (write_file(hpath, out.data) != 0)
     goto cleanup;
-  if (header_move_structs(buf, &items, hpath, path) != 0)
+  int added = 0;
+  if (source_rewrite(buf, &items, hpath, path, &added) != 0)
     goto cleanup;
+  if (added)
+    fprintf(stderr, "Added #include of %s to %s\n", hpath, path);
 
   fputs(out.data, stdout);
   rc = EXIT_SUCCESS;

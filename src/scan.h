@@ -9,7 +9,10 @@ typedef enum { ITEM_FUNC, ITEM_STRUCT, ITEM_SKIP } Kind;
 typedef struct {
   Kind kind;
   size_t start, end; /* byte range in the stripped source: [start, end) */
-  char *text;        // Only contain the function signature.
+  /* ITEM_FUNC: normalized prototype ending in ';'.
+     ITEM_STRUCT / ITEM_SKIP: unused -- the declaration lives in [start, end)
+     of the stripped source, not in this buffer. */
+  char *text;
 } Item;
 
 typedef struct {

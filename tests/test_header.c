@@ -1,8 +1,6 @@
 #include "test.h"
 
-#include "fileio.h"
-
-/* Include the implementation to reach the file-local helper functions. */
+/* Include the implementation to reach the file-local guard_name helper. */
 #include "header.c"
 
 int main(void) {
@@ -185,38 +183,6 @@ int main(void) {
       CHECK_STR(out.data, want);
     itemlist_free(&items);
     buf_free(&out);
-  }
-
-  /* --- header_move_structs: really move the struct out of the .c -------- */
-  {
-    const char *c_path = "build/test_move.c";
-    const char *h_path = "build/test_move.h";
-    const char *src = "typedef struct {\n"
-                      "  int x;\n"
-                      "} Pub;\n"
-                      "Pub *make(void) { return 0; }\n";
-    const char *want = "#include \"test_move.h\"\n"
-                       "Pub *make(void) { return 0; }\n";
-    FILE *fp = fopen(c_path, "w");
-    CHECK(fp != NULL);
-    if (fp != NULL) {
-      fputs(src, fp);
-      fclose(fp);
-    }
-
-    ItemList items = {0};
-    scan(src, &items);
-    CHECK(header_move_structs(src, &items, h_path, c_path) == 0);
-
-    size_t len = 0;
-    char *got = read_file(c_path, &len);
-    CHECK(got != NULL);
-    if (got != NULL) {
-      CHECK_STR(got, want);
-      free(got);
-    }
-    remove(c_path);
-    itemlist_free(&items);
   }
 
   TEST_REPORT("header");
