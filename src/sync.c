@@ -84,6 +84,16 @@ static void warn_missing_structs(const char *src, const ItemList *items,
   free(flags);
 }
 
+/* A file with no exportable function prototypes (e.g. main.c, or a file of
+   only static helpers) has nothing a header can usefully declare. */
+static int has_exportable_items(const ItemList *items) {
+  for (size_t i = 0; i < items->len; i++) {
+    if (items->items[i].kind == ITEM_FUNC)
+      return 1;
+  }
+  return 0;
+}
+
 static void report(const char *c_path, const char *hpath, int created,
                    int updated, int source_changed, int dry_run) {
   fprintf(stderr, "hgen: %s: ", c_path);
@@ -105,7 +115,7 @@ static void report(const char *c_path, const char *hpath, int created,
   fputc('\n', stderr);
 }
 
-int sync_file(const char *c_path, int verbose, int dry_run) {
+SyncResult sync_file(const char *c_path, int verbose, int dry_run) {
   char *buf = NULL;
   char *result = NULL;
   char *old_text = NULL;
@@ -114,7 +124,7 @@ int sync_file(const char *c_path, int verbose, int dry_run) {
   FILE *existing = NULL;
   ItemList items = {0};
   Buf out = {0};
-  int rc = -1;
+  SyncResult rc = SYNC_ERROR;
   int created = 0;
   int updated = 0;
   int source_changed = 0;
@@ -123,7 +133,7 @@ int sync_file(const char *c_path, int verbose, int dry_run) {
   size_t path_len = 0;
 
   if (c_path == NULL)
-    return -1;
+    return SYNC_ERROR;
   path_len = strlen(c_path);
 
   buf = read_file(c_path, &out_len);
@@ -135,6 +145,11 @@ int sync_file(const char *c_path, int verbose, int dry_run) {
     goto cleanup;
 
   scan(result, &items);
+
+  if (!has_exportable_items(&items)) {
+    rc = SYNC_SKIPPED;
+    goto cleanup;
+  }
 
   hpath = header_path(c_path, path_len);
   if (hpath == NULL)
@@ -186,7 +201,12 @@ int sync_file(const char *c_path, int verbose, int dry_run) {
     fputs(out.data, stdout);
   }
 
-  rc = 0;
+  if (created)
+    rc = SYNC_CREATED;
+  else if (updated)
+    rc = SYNC_UPDATED;
+  else
+    rc = SYNC_UNCHANGED;
 
 cleanup:
   if (existing != NULL)

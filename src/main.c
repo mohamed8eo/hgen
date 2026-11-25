@@ -37,5 +37,6 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  return sync_file(path, verbose, dry_run) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  return sync_file(path, verbose, dry_run) == SYNC_ERROR ? EXIT_FAILURE
+                                                         : EXIT_SUCCESS;
 }
