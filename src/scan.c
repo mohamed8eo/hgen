@@ -128,10 +128,24 @@ void scan(const char *src, ItemList *out) {
   for (const char *p = src; *p != '\0'; p++) {
     // p[-1] == *(p-1)
     if (depth == 0 && (p == src || p[-1] == '\n') && *p == '#') {
-      while (*p != '\0' && *p != '\n')
-        p++;
-      if (*p == '\n')
-        start = p + 1;
+      /* Skip the whole directive, including any continued lines. Without
+         this, the text after a trailing backslash is scanned as ordinary C
+         and leaks fake declarations into the header. */
+      const char *line = p;
+      for (;;) {
+        const char *e = strchr(line, '\n');
+        size_t len = (e != NULL) ? (size_t)(e - line) : strlen(line);
+        if (len > 0 && line[len - 1] == '\r')
+          len--;
+        if (len == 0 || line[len - 1] != '\\' || e == NULL) {
+          p = (e != NULL) ? e : line + len;
+          break;
+        }
+        line = e + 1;
+      }
+      if (*p == '\0')
+        break;
+      start = p + 1;
       continue;
     }
 

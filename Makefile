@@ -35,9 +35,9 @@ test: $(TARGET) $(TEST_BINS)
 	@for t in $(TEST_BINS); do ./$$t || exit 1; done
 	@rm -rf $(FIXTURES)
 	@mkdir -p $(FIXTURES)
-	@cp tests/kmp_search.c tests/messy.c tests/messy.h $(FIXTURES)/
-	./$(TARGET) $(FIXTURES)/kmp_search.c | diff -u tests/expected_kmp.txt -
-	./$(TARGET) $(FIXTURES)/messy.c | diff -u tests/expected_messy.txt -
+	@cp tests/kmp_search.c tests/kmp_search.h tests/messy.c tests/messy.h $(FIXTURES)/
+	./$(TARGET) --verbose $(FIXTURES)/kmp_search.c | diff -u tests/expected_kmp.txt -
+	./$(TARGET) --verbose $(FIXTURES)/messy.c | diff -u tests/expected_messy.txt -
 
 test-sanitize:
 	$(MAKE) clean

@@ -22,7 +22,8 @@ Working:
 - Moving those structs out of the `.c` file.
 - Checking whether the `.c` already includes its `.h`; adding
   `#include "file.h"` only when it is missing, otherwise skipping it.
-- Printing the generated header to stdout.
+- Printing one status line per file; dumping the generated header to stdout
+  with `--verbose`, or previewing all writes with `--dry-run`.
 
 ## Building
 
@@ -42,7 +43,9 @@ disposable copies of the fixtures, so tracked sources are never modified.
 ## Usage
 
 ```sh
-./build/hgen file.c
+./build/hgen file.c                # one status line on stderr
+./build/hgen --verbose file.c      # also dump the generated header to stdout
+./build/hgen --dry-run file.c      # preview header and source writes; change nothing
 ```
 
 For example, running it on the included fixture:

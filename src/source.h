@@ -7,9 +7,12 @@
 int source_has_own_include(const char *src, const char *h_path);
 
 /* Rewrite the .c exactly once: remove the structs emitted into the header,
-   then add the header include only when it is missing. Reports via *added. */
+   then add the header include only when it is missing. Reports via *added.
+   With dry_run != 0 nothing is written; when preview is non-NULL it receives
+   a malloc'd copy of the rewritten source, which the caller must free. */
 int source_rewrite(const char *src, const ItemList *list,
-                   const char *h_path, const char *c_path, int *added);
+                   const char *h_path, const char *c_path, int *added,
+                   int dry_run, char **preview);
 
 /* Check and add the include on an existing .c file. Reports via *added. */
 int source_ensure_include(const char *c_path, const char *h_path, int *added);

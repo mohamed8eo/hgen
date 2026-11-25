@@ -8,6 +8,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char *dup_str(const char *s) {
+  size_t n = strlen(s) + 1;
+  char *copy = malloc(n);
+  if (copy != NULL)
+    memcpy(copy, s, n);
+  return copy;
+}
+
 /* Position just after the leading block of preprocessor lines. */
 static size_t include_insert_pos(const char *src) {
   size_t line_start = 0;
@@ -148,9 +156,12 @@ fail:
 }
 
 int source_rewrite(const char *src, const ItemList *list,
-                   const char *h_path, const char *c_path, int *added) {
+                   const char *h_path, const char *c_path, int *added,
+                   int dry_run, char **preview) {
   if (added != NULL)
     *added = 0;
+  if (preview != NULL)
+    *preview = NULL;
   if (src == NULL || list == NULL || h_path == NULL || c_path == NULL)
     return -1;
 
@@ -169,21 +180,33 @@ int source_rewrite(const char *src, const ItemList *list,
     return -1;
   }
 
-  int rc;
+  Buf final = {0};
+  const char *text = NULL;
+  int rc = -1;
+
   if (have == 1) {
-    rc = write_file(c_path, without);
+    text = without;
   } else {
-    Buf final = {0};
-    if (with_include(without, h_path, &final) == -1) {
-      rc = -1;
-    } else {
-      rc = write_file(c_path, final.data);
-      if (rc == 0 && added != NULL)
-        *added = 1;
-    }
-    buf_free(&final);
+    if (with_include(without, h_path, &final) == -1)
+      goto done;
+    text = final.data;
+    if (added != NULL)
+      *added = 1;
   }
 
+  if (dry_run) {
+    if (preview != NULL) {
+      *preview = dup_str(text);
+      if (*preview == NULL)
+        goto done;
+    }
+    rc = 0;
+  } else {
+    rc = write_file(c_path, text);
+  }
+
+done:
+  buf_free(&final);
   free(without);
   return rc;
 }
