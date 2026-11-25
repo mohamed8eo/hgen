@@ -16,16 +16,13 @@ Working:
 - Skipping preprocessor directives, tracking brace depth to find top-level
   declarations, and splitting declarations on `;`.
 - Generating a header with public function prototypes and the struct
-  declarations they use (private structs stay in the `.c`), and writing it to
-  disk if it does not already exist.
+  declarations they use (private structs stay in the `.c`).
+- Creating a missing header, or updating only the generated block of an
+  existing one while keeping its guard, includes and structs.
 - Moving those structs out of the `.c` file.
 - Checking whether the `.c` already includes its `.h`; adding
   `#include "file.h"` only when it is missing, otherwise skipping it.
 - Printing the generated header to stdout.
-
-Not implemented yet:
-
-- Replacing the contents of the generated block on an existing header.
 
 ## Building
 
@@ -55,12 +52,12 @@ $ ./build/hgen tests/kmp_search.c
 #ifndef HGEN_KMP_SEARCH_H
 #define HGEN_KMP_SEARCH_H
 
-/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */
 typedef struct {
   int *table;
   int len;
 } KmpTable;
 
+/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */
 KmpTable *kmp_build(const char *pat);
 int kmp_search(const KmpTable *t, const char *pat, const char *text);
 void kmp_free(KmpTable *t);
@@ -72,9 +69,14 @@ void kmp_free(KmpTable *t);
 The same text is written to `tests/kmp_search.h`, and the public `KmpTable`
 definition is removed from `tests/kmp_search.c`. The source is then checked for
 an include of its header: `#include "kmp_search.h"` is added only if it is not
-already there, otherwise nothing is inserted. If the header already exists, the
-tool refuses to overwrite it and prints a message to stderr; the source is left
-untouched.
+already there, otherwise nothing is inserted.
+
+If the header already exists, it is not regenerated from scratch. Instead,
+everything between the BEGIN and END markers is replaced with the current
+prototypes, while the include guard, includes and struct definitions above the
+markers (and the `#endif` below them) are preserved. Any duplicate END markers
+left by older runs are collapsed into one. The source is updated the same way
+as for a new header.
 
 The include guard is derived from the header's basename with a deliberate
 `HGEN_` prefix: `tests/kmp_search.c` produces `HGEN_KMP_SEARCH_H`. The prefix
@@ -90,7 +92,7 @@ identifier even when the filename starts with a digit (`1counter.c` produces
 - `src/strip.c` — comment/literal stripping state machine.
 - `src/scan.c` — top-level declaration scanner.
 - `src/structs.c` — decides which structs belong in the header.
-- `src/header.c` — guard generation and header text rendering.
+- `src/header.c` — guard generation, header text rendering and in-place updates.
 - `src/source.c` — struct removal and include detection/insertion in the `.c`.
 - `src/buf.c` — growable output buffer.
 - `tests/kmp_search.c`, `tests/messy.c` — sample inputs with comments,
@@ -99,8 +101,8 @@ identifier even when the filename starts with a digit (`1counter.c` produces
 ## Known limitations
 
 - Only one input file per invocation.
-- An existing header is never updated; the tool refuses to overwrite it and
-  does not move structs out of the source in that case.
+- Updating an existing header only refreshes the prototype block: newly added
+  public structs are not copied into a header that already exists.
 - No special handling yet for multi-line macros, complex function pointers, or
   declarations spanning preprocessor conditionals.
 - Structs using `size_t` gain an automatic `#include <stddef.h>`; other types

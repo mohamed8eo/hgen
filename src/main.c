@@ -12,12 +12,14 @@
 int main(int argc, char *argv[]) {
   char *buf = NULL;
   char *result = NULL;
+  char *old_text = NULL;
   char *hpath = NULL;
   FILE *existing = NULL;
   ItemList items = {0};
   Buf out = {0};
   int rc = EXIT_FAILURE;
   size_t out_len = 0;
+  size_t old_len = 0;
   size_t path_len = 0;
   const char *path = NULL;
 
@@ -45,15 +47,29 @@ int main(int argc, char *argv[]) {
 
   existing = fopen(hpath, "r");
   if (existing != NULL) {
-    fprintf(stderr, "Header %s already exists; refusing to overwrite\n", hpath);
-    rc = EXIT_SUCCESS;
-    goto cleanup;
+    /* The file is there: keep its guard, includes and structs, and replace
+       only the generated block between the markers. */
+    fclose(existing);
+    existing = NULL;
+
+    old_text = read_file(hpath, &old_len);
+    if (old_text == NULL)
+      goto cleanup;
+    if (header_update(old_text, &items, &out) != 0)
+      goto cleanup;
+    free(old_text);
+    old_text = NULL;
+
+    if (write_file(hpath, out.data) != 0)
+      goto cleanup;
+    fprintf(stderr, "Updated existing header %s\n", hpath);
+  } else {
+    if (header_build(result, hpath, &items, &out) != 0)
+      goto cleanup;
+    if (write_file(hpath, out.data) != 0)
+      goto cleanup;
   }
 
-  if (header_build(result, hpath, &items, &out) != 0)
-    goto cleanup;
-  if (write_file(hpath, out.data) != 0)
-    goto cleanup;
   int added = 0;
   if (source_rewrite(buf, &items, hpath, path, &added) != 0)
     goto cleanup;
@@ -66,6 +82,7 @@ int main(int argc, char *argv[]) {
 cleanup:
   if (existing != NULL)
     fclose(existing);
+  free(old_text);
   buf_free(&out);
   itemlist_free(&items);
   free(hpath);

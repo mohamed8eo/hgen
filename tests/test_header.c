@@ -86,11 +86,11 @@ int main(void) {
     const char *want = "#ifndef HGEN_FOO_H\n"
                        "#define HGEN_FOO_H\n"
                        "\n"
-                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
                        "typedef struct {\n"
                        "  int x;\n"
                        "} Pub;\n"
                        "\n"
+                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
                        "Pub *make_pub(void);\n"
                        "/* --- END PROTOTYPES --- */\n"
                        "\n"
@@ -138,11 +138,11 @@ int main(void) {
                        "\n"
                        "#include <stddef.h>\n"
                        "\n"
-                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
                        "typedef struct {\n"
                        "  size_t n;\n"
                        "} B;\n"
                        "\n"
+                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
                        "B *make(void);\n"
                        "/* --- END PROTOTYPES --- */\n"
                        "\n"
@@ -165,11 +165,11 @@ int main(void) {
     const char *want = "#ifndef HGEN_FOO_H\n"
                        "#define HGEN_FOO_H\n"
                        "\n"
-                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
                        "struct Foo {\n"
                        "  int x;\n"
                        "};\n"
                        "\n"
+                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
                        "struct Foo *make(void);\n"
                        "/* --- END PROTOTYPES --- */\n"
                        "\n"
@@ -181,6 +181,74 @@ int main(void) {
     CHECK(out.data != NULL);
     if (out.data != NULL)
       CHECK_STR(out.data, want);
+    itemlist_free(&items);
+    buf_free(&out);
+  }
+
+  /* --- header_update: only the generated block changes. Everything above
+         BEGIN and below END is kept, and duplicated END markers from older
+         runs collapse into a single one. */
+  {
+    const char *src = "typedef struct {\n"
+                      "  int x;\n"
+                      "} Pub;\n"
+                      "Pub *make_pub(void) { return 0; }\n"
+                      "int extra(int a) { return a; }\n";
+    const char *old = "#ifndef HGEN_FOO_H\n"
+                      "#define HGEN_FOO_H\n"
+                      "\n"
+                      "typedef struct {\n"
+                      "  int x;\n"
+                      "} Pub;\n"
+                      "\n"
+                      "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
+                      "Pub *old_api(void);\n"
+                      "/* --- END PROTOTYPES --- */\n"
+                      "/* --- END PROTOTYPES --- */\n"
+                      "\n"
+                      "#endif /* HGEN_FOO_H */\n";
+    const char *want = "#ifndef HGEN_FOO_H\n"
+                       "#define HGEN_FOO_H\n"
+                       "\n"
+                       "typedef struct {\n"
+                       "  int x;\n"
+                       "} Pub;\n"
+                       "\n"
+                       "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n"
+                       "Pub *make_pub(void);\n"
+                       "int extra(int a);\n"
+                       "/* --- END PROTOTYPES --- */\n"
+                       "\n"
+                       "#endif /* HGEN_FOO_H */\n";
+    ItemList items = {0};
+    Buf out = {0};
+    scan(src, &items);
+    CHECK(header_update(old, &items, &out) == 0);
+    CHECK(out.data != NULL);
+    if (out.data != NULL)
+      CHECK_STR(out.data, want);
+    itemlist_free(&items);
+    buf_free(&out);
+  }
+
+  /* Refuse malformed headers without touching the output buffer. */
+  CHECK(header_update(NULL, NULL, NULL) == -1);
+  {
+    ItemList items = {0};
+    Buf out = {0};
+    const char *old = "#ifndef X\n#define X\n#endif\n";
+    CHECK(header_update(old, &items, &out) == -1);
+    CHECK(out.data == NULL);
+    itemlist_free(&items);
+    buf_free(&out);
+  }
+  {
+    ItemList items = {0};
+    Buf out = {0};
+    const char *old = "/* --- END PROTOTYPES --- */\n"
+                      "/* --- BEGIN PROTOTYPES (auto-generated, do not edit) --- */\n";
+    CHECK(header_update(old, &items, &out) == -1);
+    CHECK(out.data == NULL);
     itemlist_free(&items);
     buf_free(&out);
   }

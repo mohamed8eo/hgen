@@ -10,5 +10,6 @@
 char *header_path(const char *path, size_t path_len);
 int header_build(const char *src, const char *h_path, const ItemList *list,
                  Buf *out);
+int header_update(const char *old_text, const ItemList *list, Buf *out);
 
 #endif /* HEADER_H */

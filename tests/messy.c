@@ -1,14 +1,10 @@
+#include "messy.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* A public struct: used in public function signatures,
    so the tool should move it into the .h later. */
-typedef struct {
-  int *table;
-  int len;
-} KmpTable;
-
 /* A private struct: only used inside this file,
    so it must stay in the .c. */
 struct Counter {
@@ -19,10 +15,10 @@ struct Counter {
 static void print_debug(const char *msg) {
   printf("debug: %s { not a real brace }\n", msg);
 }
+void test() {}
 
 /* builds the failure table for a pattern */
-KmpTable *kmp_build(const char *pat, const char *test, const char *test3,
-                    char for_test_only) {
+KmpTable *kmp_build(const char *pat, const char *test, const char *test3) {
   int m = (int)strlen(pat);
   KmpTable *t = malloc(sizeof *t);
   t->table = calloc(m, sizeof(int));
