@@ -16,6 +16,9 @@ typedef enum {
 
 #define CMD_COMMANDS (CMD_INIT | CMD_SYNC | CMD_AUTO_SYNC)
 
+/* Runs the whole CLI: parse, validate and dispatch. */
+int cmd_run(int argc, char **argv);
+
 /* Returns the parsed command/modifier mask. Bare arguments (paths) are
    ignored here; use command_path() to retrieve them. */
 CmdType parse_command(int argc, char **argv);
