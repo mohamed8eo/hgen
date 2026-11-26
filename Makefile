@@ -17,6 +17,7 @@ SRCS := \
 	$(SRC_DIR)/header.c \
 	$(SRC_DIR)/sync.c \
 	$(SRC_DIR)/project.c \
+	$(SRC_DIR)/cmd.c \
 	$(SRC_DIR)/cmd_sync.c
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
