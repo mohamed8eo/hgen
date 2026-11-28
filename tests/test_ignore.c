@@ -114,12 +114,32 @@ static void test_load_missing_file_defaults(void) {
     CHECK_STR(list.rules[3].pat, "node_modules");
   }
 
-  /* defaults behave like normal rules ("build" has no trailing /, so dir_only=0) */
+  /* defaults behave like normal rules ("build" has no trailing /) */
   CHECK_INT(ignore_match(&list, "build", 1), 1);
   CHECK_INT(ignore_match(&list, "build", 0), 1);
   CHECK_INT(ignore_match(&list, "node_modules", 1), 1);
   CHECK_INT(ignore_match(&list, "node_modules", 0), 1);
 
+  /* No .hgenignore or .hgen was written into tmpdir */
+  char probe[512];
+  snprintf(probe, sizeof(probe), "%s/%s", tmpdir, HGENIGNORE);
+  CHECK(access(probe, F_OK) != 0);
+  snprintf(probe, sizeof(probe), "%s/%s", tmpdir, HGENDIR);
+  CHECK(access(probe, F_OK) != 0);
+
+  ignore_free(&list);
+}
+
+static void test_load_null_root_defaults(void) {
+  IgnoreList list = {NULL, 0};
+  CHECK_INT(ignore_load(NULL, &list), 0);
+  CHECK_SIZE(list.len, 4);
+  if (list.len >= 4) {
+    CHECK_STR(list.rules[0].pat, ".git");
+    CHECK_STR(list.rules[1].pat, ".hgen");
+    CHECK_STR(list.rules[2].pat, "build");
+    CHECK_STR(list.rules[3].pat, "node_modules");
+  }
   ignore_free(&list);
 }
 
@@ -187,6 +207,7 @@ int main(void) {
   test_match_core_glob();
   test_match_empty_list();
   test_load_missing_file_defaults();
+  test_load_null_root_defaults();
   test_load_parses_file();
   test_load_comments_and_blanks_ignored();
   test_load_trailing_crlf_trimmed();

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <errno.h>
 
 /* Universal defaults: names almost nobody wants scanned, in any project. */
 static const char *DEFAULTS[] = {".git", ".hgen", "build", "node_modules"};
@@ -26,11 +27,10 @@ static int push_rule(IgnoreList *list, const char *pat, int dir_only) {
 }
 
 /* Load the built-in defaults through the same push path. */
-static int load_defaults(IgnoreList *list) {
-  for (size_t i = 0; i < DEFAULT_COUNT; i++) {
-    if (push_rule(list, DEFAULTS[i], 0) != 0)
+static int load_defaults(IgnoreList *out) {
+  for (size_t i = 0; i < DEFAULT_COUNT; i++)
+    if (push_rule(out, DEFAULTS[i], 0) != 0)
       return -1;
-  }
   return 0;
 }
 
@@ -75,19 +75,32 @@ int ignore_load(const char *root, IgnoreList *out) {
   out->rules = NULL;
   out->len = 0;
 
+  /* NULL root means defaults, no file access at all. */
+  if (root == NULL)
+    return load_defaults(out);
+
   char *path = NULL;
-  size_t n = snprintf(NULL, 0, "%s/%s", root, HGENIGNORE) + 1;
-  path = malloc(n);
+  int n = snprintf(NULL, 0, "%s/%s", root, HGENIGNORE) + 1;
+  if (n < 0) {
+    return -1;
+  }
+  path = malloc((size_t)n);
   if (path == NULL)
     return -1;
-  snprintf(path, n, "%s/%s", root, HGENIGNORE);
+  snprintf(path, (size_t)n, "%s/%s", root, HGENIGNORE);
 
   FILE *fp = fopen(path, "r");
   free(path);
 
-  /* Missing file is not an error: use built-in defaults, write nothing. */
-  if (fp == NULL)
+  if (fp == NULL) {
+    /* Missing file is not an error: use built-in defaults, write nothing.
+     * Any other error (permissions, etc.) is reported. */
+    if (errno != ENOENT) {
+      perror("fopen");
+      return -1;
+    }
     return load_defaults(out);
+  }
 
   char *line = NULL;
   size_t cap = 0;

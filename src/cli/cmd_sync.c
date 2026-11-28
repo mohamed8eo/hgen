@@ -40,8 +40,14 @@ int cmd_sync(int argc, char **argv, int verbose, int dry_run) {
   }
 
   if (S_ISDIR(info.st_mode)) {
-    if (project_walk(target, on_file, &ctx))
+    const char *root = project_find_root(target);
+    if (root == NULL) {
+      fprintf(stderr, "hgen: no .hgen directory above %s; using defaults\n",
+              target);
+    }
+    if (project_walk(target, root, on_file, &ctx))
       return EXIT_FAILURE;
+    free((void *)root);
   } else {
     on_file(target, &ctx);
   }

@@ -13,7 +13,7 @@ TARGET := $(BUILD_DIR)/hgen
 
 TEST_SRCS := tests/test_scan.c tests/test_strip.c tests/test_fileio.c \
 	tests/test_header.c tests/test_structs.c tests/test_source.c \
-	tests/test_ignore.c
+	tests/test_ignore.c tests/test_project.c
 TEST_BINS := $(patsubst tests/%.c,$(BUILD_DIR)/%,$(TEST_SRCS))
 FIXTURES := $(BUILD_DIR)/fixtures
 
@@ -63,9 +63,13 @@ $(BUILD_DIR)/test_source: tests/test_source.c tests/test.h $(SRC_DIR)/pipeline/s
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_source.c $(SRC_DIR)/pipeline/source.c $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/scan/scan.c $(SRC_DIR)/core/buf.c $(SRC_DIR)/core/fileio.c
 
-$(BUILD_DIR)/test_ignore: tests/test_ignore.c tests/test.h $(SRC_DIR)/project/ignore.c $(SRC_DIR)/project/ignore.h $(SRC_DIR)/cli/cmd_init.h
+$(BUILD_DIR)/test_ignore: tests/test_ignore.c tests/test.h $(SRC_DIR)/project/ignore.c $(SRC_DIR)/project/ignore.h $(SRC_DIR)/project/project.h
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_ignore.c $(SRC_DIR)/project/ignore.c
+
+$(BUILD_DIR)/test_project: tests/test_project.c tests/test.h $(SRC_DIR)/project/project.c $(SRC_DIR)/project/project.h $(SRC_DIR)/project/ignore.c $(SRC_DIR)/project/ignore.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_project.c $(SRC_DIR)/project/project.c $(SRC_DIR)/project/ignore.c
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)

@@ -1,7 +1,7 @@
 #ifndef IGNORE_H
 #define IGNORE_H
 
-#define HGENIGNORE ".hgenignore"
+#include "project.h"
 
 #include <stddef.h>
 

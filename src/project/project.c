@@ -1,7 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
 
 #include "project.h"
-#include "project/ignore.h"
+#include "../project/ignore.h"
 #include <dirent.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -47,9 +48,9 @@ static char *clean_path(const char *root) {
   return clean;
 }
 
-static int walk(const char *root, const IgnoreList *list, FileCallback cb,
+static int walk(const char *start, const IgnoreList *list, FileCallback cb,
                 void *ctx) {
-  DIR *dir = opendir(root);
+  DIR *dir = opendir(start);
   if (dir == NULL)
     return -1;
 
@@ -61,13 +62,13 @@ static int walk(const char *root, const IgnoreList *list, FileCallback cb,
     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
       continue;
 
-    char path[4096];
-    int n = snprintf(path, sizeof(path), "%s/%s", root, entry->d_name);
+    char slash[4096];
+    int n = snprintf(slash, sizeof(slash), "%s/%s", start, entry->d_name);
 
-    if (n < 0 || (size_t)n >= sizeof(path))
+    if (n < 0 || (size_t)n >= sizeof(slash))
       continue;
 
-    if (lstat(path, &st) == -1)
+    if (lstat(slash, &st) == -1)
       continue;
 
     /* Only now do we know whether the entry is a directory. */
@@ -75,37 +76,78 @@ static int walk(const char *root, const IgnoreList *list, FileCallback cb,
       continue;
 
     if (S_ISDIR(st.st_mode)) {
-      if (walk(path, list, cb, ctx) == -1) {
-        fprintf(stderr, "Failed to open dir: %s\n", path);
+      if (walk(slash, list, cb, ctx) == -1) {
+        fprintf(stderr, "Failed to open dir: %s\n", slash);
         result = -1;
       }
     } else if (S_ISREG(st.st_mode)) {
       if (!ends_with_c(entry->d_name))
         continue;
-      cb(path, ctx);
+      cb(slash, ctx);
     }
   }
   closedir(dir);
   return result;
 }
 
-int project_walk(const char *root, FileCallback cb, void *ctx) {
-  if (root == NULL || cb == NULL)
+int project_walk(const char *start, const char *root, FileCallback cb,
+                 void *ctx) {
+  if (start == NULL || cb == NULL)
     return -1;
 
-  char *clean_root = clean_path(root);
-  if (clean_root == NULL)
+  char *clean_start = clean_path(start);
+  if (clean_start == NULL)
     return -1;
 
   IgnoreList list;
-  if (ignore_load(clean_root, &list) != 0) {
-    free(clean_root);
+  if (ignore_load(root, &list) != 0) {
+    free(clean_start);
     return -1;
   }
 
-  int result = walk(clean_root, &list, cb, ctx);
+  int result = walk(clean_start, &list, cb, ctx);
 
   ignore_free(&list);
-  free(clean_root);
+  free(clean_start);
   return result;
+}
+
+/* "/a/b/c" -> "/a/b"    "/a" -> "/" */
+static void cut_last(char *dir) {
+  char *slash = strrchr(dir, '/');
+  if (slash == dir)
+    dir[1] = '\0'; /* keep the leading '/' */
+  else
+    *slash = '\0';
+}
+
+char *project_find_root(const char *start) {
+  char *dir = realpath(start, NULL);
+  if (dir == NULL)
+    return NULL;
+
+  struct stat st;
+  if (stat(dir, &st) != 0) {
+    free(dir);
+    return NULL;
+  }
+  if (!S_ISDIR(st.st_mode)) /* a file: start at its folder */
+    cut_last(dir);
+
+  char probe[4096];
+  for (;;) {
+    int n = snprintf(probe, sizeof(probe), "%s/%s", dir, HGENDIR);
+    if (n < 0 || (size_t)n >= sizeof(probe)) {
+      free(dir);
+      return NULL;
+    }
+    if (stat(probe, &st) == 0 && S_ISDIR(st.st_mode))
+      return dir;
+
+    if (strcmp(dir, "/") == 0) { /* reached the top, nothing found */
+      free(dir);
+      return NULL;
+    }
+    cut_last(dir);
+  }
 }
