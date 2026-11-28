@@ -1,4 +1,5 @@
 #include "cmd_init.h"
+#include "project/ignore.h"
 #define _DEFAULT_SOURCE
 
 #include <errno.h>

@@ -1,7 +1,6 @@
 #define _DEFAULT_SOURCE
 #include "test.h"
 #include "project/ignore.h"
-#include "cli/cmd_init.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -11,27 +10,6 @@
 #include <unistd.h>
 
 static const char *tmpdir = "build/test_ignore_root";
-
-/* ---- stub: cmd_init, so ignore_load is tested in isolation ---- */
-static int stub_cmd_init_rc = 0;          /* return code of the stub */
-static int stub_cmd_init_create = 0;      /* whether stub creates .hgenignore */
-static int stub_cmd_init_called = 0;
-static const char *stub_cmd_init_root = NULL;
-
-int cmd_init(const char *target) {
-  stub_cmd_init_called = 1;
-  stub_cmd_init_root = target;
-  if (stub_cmd_init_create && target != NULL) {
-    char path[512];
-    snprintf(path, sizeof(path), "%s/%s", target, HGENIGNORE);
-    FILE *fp = fopen(path, "w");
-    if (fp != NULL) {
-      fputs("# comment\nfoo\nbar\n", fp);
-      fclose(fp);
-    }
-  }
-  return stub_cmd_init_rc;
-}
 
 static void setup_dir(void) {
   mkdir(tmpdir, 0755);
@@ -121,60 +99,35 @@ static void test_match_empty_list(void) {
 
 /* ---- ignore_load tests (file-based) ---- */
 
-static void test_load_missing_file_cmd_init_creates(void) {
+static void test_load_missing_file_defaults(void) {
   setup_dir();
-  stub_cmd_init_create = 1;
-  stub_cmd_init_rc = EXIT_SUCCESS;
-  stub_cmd_init_called = 0;
-
   IgnoreList list = {NULL, 0};
   CHECK_INT(ignore_load(tmpdir, &list), 0);
 
-  /* cmd_init must have been invoked with our root. */
-  CHECK_INT(stub_cmd_init_called, 1);
-  CHECK_STR(stub_cmd_init_root, tmpdir);
-
-  /* The stub wrote "# comment\nfoo\nbar\n" -> 2 rules (foo, bar). */
-  CHECK_SIZE(list.len, 2);
-  if (list.len >= 2) {
-    CHECK_STR(list.rules[0].pat, "foo");
+  /* universal defaults: .git, .hgen, build, node_modules */
+  CHECK_SIZE(list.len, 4);
+  if (list.len >= 4) {
+    CHECK_STR(list.rules[0].pat, ".git");
     CHECK_INT(list.rules[0].dir_only, 0);
-    CHECK_STR(list.rules[1].pat, "bar");
-    CHECK_INT(list.rules[1].dir_only, 0);
+    CHECK_STR(list.rules[1].pat, ".hgen");
+    CHECK_STR(list.rules[2].pat, "build");
+    CHECK_STR(list.rules[3].pat, "node_modules");
   }
+
+  /* defaults behave like normal rules ("build" has no trailing /, so dir_only=0) */
+  CHECK_INT(ignore_match(&list, "build", 1), 1);
+  CHECK_INT(ignore_match(&list, "build", 0), 1);
+  CHECK_INT(ignore_match(&list, "node_modules", 1), 1);
+  CHECK_INT(ignore_match(&list, "node_modules", 0), 1);
+
   ignore_free(&list);
-}
-
-static void test_load_missing_file_cmd_init_fails(void) {
-  setup_dir();
-  stub_cmd_init_create = 0;
-  stub_cmd_init_rc = EXIT_FAILURE;
-  stub_cmd_init_called = 0;
-
-  IgnoreList list = {NULL, 0};
-  CHECK_INT(ignore_load(tmpdir, &list), -1);
-  CHECK_INT(stub_cmd_init_called, 1);
-}
-
-static void test_load_missing_file_cmd_init_no_create(void) {
-  setup_dir();
-  stub_cmd_init_create = 0;
-  stub_cmd_init_rc = EXIT_SUCCESS;
-  stub_cmd_init_called = 0;
-
-  IgnoreList list = {NULL, 0};
-  CHECK_INT(ignore_load(tmpdir, &list), -1);
-  CHECK_INT(stub_cmd_init_called, 1);
 }
 
 static void test_load_parses_file(void) {
   setup_dir();
   write_hgenignore("# build output\nbuild/\n*.o\n\nnode_modules\n");
   IgnoreList list = {NULL, 0};
-  stub_cmd_init_called = 0;
   CHECK_INT(ignore_load(tmpdir, &list), 0);
-  /* File exists, so cmd_init should NOT be called. */
-  CHECK_INT(stub_cmd_init_called, 0);
 
   CHECK_SIZE(list.len, 3);
   if (list.len >= 3) {
@@ -233,9 +186,7 @@ int main(void) {
   test_match_star();
   test_match_core_glob();
   test_match_empty_list();
-  test_load_missing_file_cmd_init_creates();
-  test_load_missing_file_cmd_init_fails();
-  test_load_missing_file_cmd_init_no_create();
+  test_load_missing_file_defaults();
   test_load_parses_file();
   test_load_comments_and_blanks_ignored();
   test_load_trailing_crlf_trimmed();

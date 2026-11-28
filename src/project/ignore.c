@@ -1,12 +1,15 @@
 #define _DEFAULT_SOURCE
 
 #include "ignore.h"
-#include "../cli/cmd_init.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+
+/* Universal defaults: names almost nobody wants scanned, in any project. */
+static const char *DEFAULTS[] = {".git", ".hgen", "build", "node_modules"};
+#define DEFAULT_COUNT (sizeof(DEFAULTS) / sizeof(DEFAULTS[0]))
 
 /* Append a rule to the list, growing the array with realloc. */
 static int push_rule(IgnoreList *list, const char *pat, int dir_only) {
@@ -19,6 +22,15 @@ static int push_rule(IgnoreList *list, const char *pat, int dir_only) {
     return -1;
   list->rules[list->len].dir_only = dir_only;
   list->len++;
+  return 0;
+}
+
+/* Load the built-in defaults through the same push path. */
+static int load_defaults(IgnoreList *list) {
+  for (size_t i = 0; i < DEFAULT_COUNT; i++) {
+    if (push_rule(list, DEFAULTS[i], 0) != 0)
+      return -1;
+  }
   return 0;
 }
 
@@ -71,21 +83,11 @@ int ignore_load(const char *root, IgnoreList *out) {
   snprintf(path, n, "%s/%s", root, HGENIGNORE);
 
   FILE *fp = fopen(path, "r");
+  free(path);
 
-  if (fp == NULL) {
-    /* File missing: initialize the project, then try again. */
-    if (cmd_init(root) != 0) {
-      free(path);
-      return -1;
-    }
-
-    fp = fopen(path, "r");
-    if (fp == NULL) {
-      perror("fopen");
-      free(path);
-      return -1;
-    }
-  }
+  /* Missing file is not an error: use built-in defaults, write nothing. */
+  if (fp == NULL)
+    return load_defaults(out);
 
   char *line = NULL;
   size_t cap = 0;
@@ -127,7 +129,6 @@ int ignore_load(const char *root, IgnoreList *out) {
   }
 
   free(line);
-  free(path);
   fclose(fp);
 
   if (rc != 0) {

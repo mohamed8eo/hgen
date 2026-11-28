@@ -1,6 +1,6 @@
 #ifndef CMD_INIT_H
 #define CMD_INIT_H
-#define HGENIGNORE ".hgenignore"
+
 #define HGENDIR ".hgen"
 
 int cmd_init(const char *target); /* NULL or "." means current directory */
