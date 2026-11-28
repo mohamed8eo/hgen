@@ -1,4 +1,4 @@
-#include "cmd.h"
+#include "../cli/cmd.h"
 
 #include <stdlib.h>
 

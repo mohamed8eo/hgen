@@ -1,6 +1,6 @@
-#include "cmd_sync.h"
-#include "project.h"
-#include "sync.h"
+#include "../cli/cmd_sync.h"
+#include "../project/project.h"
+#include "../sync/sync.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>

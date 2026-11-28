@@ -1,6 +1,6 @@
 #include "header.h"
-#include "buf.h"
-#include "scan.h"
+#include "core/buf.h"
+#include "scan/scan.h"
 #include "structs.h"
 
 #include <ctype.h>

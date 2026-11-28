@@ -1,8 +1,8 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#include "buf.h"
-#include "scan.h"
+#include "core/buf.h"
+#include "scan/scan.h"
 
 #include <stddef.h>
 

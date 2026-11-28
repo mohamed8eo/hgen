@@ -1,7 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-#include "scan.h"
+#include "scan/scan.h"
 
 #include <stddef.h>
 

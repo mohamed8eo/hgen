@@ -6,19 +6,7 @@ SRC_DIR := src
 BUILD_DIR := build
 OBJ_DIR := $(BUILD_DIR)/obj
 
-SRCS := \
-	$(SRC_DIR)/main.c \
-	$(SRC_DIR)/fileio.c \
-	$(SRC_DIR)/strip.c \
-	$(SRC_DIR)/scan.c \
-	$(SRC_DIR)/buf.c \
-	$(SRC_DIR)/structs.c \
-	$(SRC_DIR)/source.c \
-	$(SRC_DIR)/header.c \
-	$(SRC_DIR)/sync.c \
-	$(SRC_DIR)/project.c \
-	$(SRC_DIR)/cmd.c \
-	$(SRC_DIR)/cmd_sync.c
+SRCS := $(shell find $(SRC_DIR) -name '*.c' | sort)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 TARGET := $(BUILD_DIR)/hgen
@@ -38,9 +26,9 @@ test: $(TARGET) $(TEST_BINS)
 	@for t in $(TEST_BINS); do ./$$t || exit 1; done
 	@rm -rf $(FIXTURES)
 	@mkdir -p $(FIXTURES)
-	@cp tests/kmp_search.c tests/kmp_search.h tests/messy.c tests/messy.h $(FIXTURES)/
-	./$(TARGET) --verbose $(FIXTURES)/kmp_search.c | diff -u tests/expected_kmp.txt -
-	./$(TARGET) --verbose $(FIXTURES)/messy.c | diff -u tests/expected_messy.txt -
+	@cp tests/fixtures/kmp_search.c tests/fixtures/kmp_search.h tests/fixtures/messy.c tests/fixtures/messy.h $(FIXTURES)/
+	./$(TARGET) --verbose $(FIXTURES)/kmp_search.c | diff -u tests/expected/expected_kmp.txt -
+	./$(TARGET) --verbose $(FIXTURES)/messy.c | diff -u tests/expected/expected_messy.txt -
 
 test-sanitize:
 	$(MAKE) clean
@@ -50,34 +38,32 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
-# test_scan and test_header include an implementation file to reach its
-# file-local helpers; do not link those files twice.
-$(BUILD_DIR)/test_scan: tests/test_scan.c tests/test.h $(SRC_DIR)/scan.c $(SRC_DIR)/scan.h
+$(BUILD_DIR)/test_scan: tests/test_scan.c tests/test.h $(SRC_DIR)/scan/scan.c $(SRC_DIR)/scan/scan.h
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_scan.c
 
-$(BUILD_DIR)/test_strip: tests/test_strip.c tests/test.h $(SRC_DIR)/strip.c $(SRC_DIR)/strip.h
+$(BUILD_DIR)/test_strip: tests/test_strip.c tests/test.h $(SRC_DIR)/core/strip.c $(SRC_DIR)/core/strip.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_strip.c $(SRC_DIR)/strip.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_strip.c $(SRC_DIR)/core/strip.c
 
-$(BUILD_DIR)/test_fileio: tests/test_fileio.c tests/test.h $(SRC_DIR)/fileio.c $(SRC_DIR)/fileio.h
+$(BUILD_DIR)/test_fileio: tests/test_fileio.c tests/test.h $(SRC_DIR)/core/fileio.c $(SRC_DIR)/core/fileio.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_fileio.c $(SRC_DIR)/fileio.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_fileio.c $(SRC_DIR)/core/fileio.c
 
-$(BUILD_DIR)/test_header: tests/test_header.c tests/test.h $(SRC_DIR)/header.c $(SRC_DIR)/header.h $(SRC_DIR)/structs.c $(SRC_DIR)/structs.h $(SRC_DIR)/scan.c $(SRC_DIR)/scan.h $(SRC_DIR)/buf.c
+$(BUILD_DIR)/test_header: tests/test_header.c tests/test.h $(SRC_DIR)/pipeline/header.c $(SRC_DIR)/pipeline/header.h $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/pipeline/structs.h $(SRC_DIR)/scan/scan.c $(SRC_DIR)/scan/scan.h $(SRC_DIR)/core/buf.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_header.c $(SRC_DIR)/structs.c $(SRC_DIR)/scan.c $(SRC_DIR)/buf.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_header.c $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/scan/scan.c $(SRC_DIR)/core/buf.c
 
-$(BUILD_DIR)/test_structs: tests/test_structs.c tests/test.h $(SRC_DIR)/structs.c $(SRC_DIR)/structs.h $(SRC_DIR)/scan.c $(SRC_DIR)/scan.h
+$(BUILD_DIR)/test_structs: tests/test_structs.c tests/test.h $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/pipeline/structs.h $(SRC_DIR)/scan/scan.c $(SRC_DIR)/scan/scan.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_structs.c $(SRC_DIR)/structs.c $(SRC_DIR)/scan.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_structs.c $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/scan/scan.c
 
-$(BUILD_DIR)/test_source: tests/test_source.c tests/test.h $(SRC_DIR)/source.c $(SRC_DIR)/source.h $(SRC_DIR)/structs.c $(SRC_DIR)/structs.h $(SRC_DIR)/scan.c $(SRC_DIR)/scan.h $(SRC_DIR)/buf.c $(SRC_DIR)/fileio.c $(SRC_DIR)/fileio.h
+$(BUILD_DIR)/test_source: tests/test_source.c tests/test.h $(SRC_DIR)/pipeline/source.c $(SRC_DIR)/pipeline/source.h $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/pipeline/structs.h $(SRC_DIR)/scan/scan.c $(SRC_DIR)/scan/scan.h $(SRC_DIR)/core/buf.c $(SRC_DIR)/core/fileio.c $(SRC_DIR)/core/fileio.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_source.c $(SRC_DIR)/source.c $(SRC_DIR)/structs.c $(SRC_DIR)/scan.c $(SRC_DIR)/buf.c $(SRC_DIR)/fileio.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ tests/test_source.c $(SRC_DIR)/pipeline/source.c $(SRC_DIR)/pipeline/structs.c $(SRC_DIR)/scan/scan.c $(SRC_DIR)/core/buf.c $(SRC_DIR)/core/fileio.c
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(OBJ_DIR)
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean:

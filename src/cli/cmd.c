@@ -1,5 +1,5 @@
-#include "cmd.h"
-#include "cmd_sync.h"
+#include "../cli/cmd.h"
+#include "../cli/cmd_sync.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,9 +46,12 @@ char *command_path(int argc, char **argv) {
   for (int i = 1; i < argc; i++) {
     char *arg = argv[i];
 
-    if (arg[0] == '-' && arg[1] != '\0') continue;
-    if (is_command(arg)) continue;
-    if (path != NULL) return NULL;
+    if (arg[0] == '-' && arg[1] != '\0')
+      continue;
+    if (is_command(arg))
+      continue;
+    if (path != NULL)
+      return NULL;
     path = arg;
   }
 

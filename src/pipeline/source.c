@@ -1,7 +1,7 @@
 #include "source.h"
 
-#include "buf.h"
-#include "fileio.h"
+#include "core/buf.h"
+#include "core/fileio.h"
 #include "structs.h"
 
 #include <stdio.h>

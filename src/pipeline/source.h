@@ -1,7 +1,7 @@
 #ifndef SOURCE_H
 #define SOURCE_H
 
-#include "scan.h"
+#include "scan/scan.h"
 
 /* 1 = src includes its own header, 0 = it does not, -1 = bad input. */
 int source_has_own_include(const char *src, const char *h_path);

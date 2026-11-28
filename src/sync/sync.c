@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "buf.h"
-#include "fileio.h"
-#include "header.h"
-#include "scan.h"
-#include "source.h"
-#include "strip.h"
-#include "structs.h"
+#include "core/buf.h"
+#include "core/fileio.h"
+#include "pipeline/header.h"
+#include "scan/scan.h"
+#include "pipeline/source.h"
+#include "core/strip.h"
+#include "pipeline/structs.h"
 
 /* Whitespace-insensitive copies, used to spot structs that never made it
    into an existing header despite formatting differences. */

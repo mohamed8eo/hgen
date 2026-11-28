@@ -89,17 +89,22 @@ identifier even when the filename starts with a digit (`1counter.c` produces
 
 ## Project layout
 
-- `src/main.c` — CLI entry point; reads the file, strips it, scans it, then
-  writes the header and rewrites the source.
-- `src/fileio.c` — reads and writes whole files.
-- `src/strip.c` — comment/literal stripping state machine.
-- `src/scan.c` — top-level declaration scanner.
-- `src/structs.c` — decides which structs belong in the header.
-- `src/header.c` — guard generation, header text rendering and in-place updates.
-- `src/source.c` — struct removal and include detection/insertion in the `.c`.
-- `src/buf.c` — growable output buffer.
-- `tests/kmp_search.c`, `tests/messy.c` — sample inputs with comments,
-  literals, braces inside strings, and a signature split over two lines.
+- `src/cli/` — command-line interface: `main.c` entry point, `cmd.c`/`cmd.h`
+  argument parsing and dispatch, `cmd_sync.c`/`cmd_sync.h` the sync command.
+- `src/core/` — low-level utilities with no internal deps: `buf.c` growable
+  output buffer, `fileio.c` reading/writing whole files, `strip.c` comment and
+  string/char-literal stripping state machine.
+- `src/scan/` — top-level declaration scanner (`scan.c`/`scan.h`), producing the
+  `Item`/`ItemList` used by every later stage.
+- `src/pipeline/` — the generation pipeline: `structs.c` public/private struct
+  detection, `header.c` guard generation, header rendering and in-place updates,
+  `source.c` struct removal and `#include` detection/insertion in the `.c`.
+- `src/sync/` — per-file orchestration (`sync.c`/`sync.h`): strip → scan →
+  header → source, with create/update/skip reporting.
+- `src/project/` — directory walking (`project.c`/`project.h`).
+- `tests/` — unit tests (`test_*.c` + `test.h`), integration fixtures under
+  `tests/fixtures/`, and golden expected outputs under `tests/expected/`.
+- `build/` — build output (gitignored).
 
 ## Known limitations
 
