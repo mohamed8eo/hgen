@@ -93,8 +93,7 @@ int cmd_run(int argc, char **argv) {
   case CMD_AUTO_SYNC:
     return cmd_sync(argc, argv, verbose, dry_run);
   case CMD_INIT:
-    return cmd_init();
-    // fprintf(stderr, "%s: 'init' is not implemented yet\n", argv[0]);
+    return cmd_init(command_path(argc, argv));
   case CMD_NONE: {
     char *path = command_path(argc, argv);
     if (path == NULL) {

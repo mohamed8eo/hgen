@@ -26,7 +26,7 @@ test: $(TARGET) $(TEST_BINS)
 	@for t in $(TEST_BINS); do ./$$t || exit 1; done
 	@rm -rf $(FIXTURES)
 	@mkdir -p $(FIXTURES)
-	@cp tests/fixtures/kmp_search.c tests/fixtures/kmp_search.h tests/fixtures/messy.c tests/fixtures/messy.h $(FIXTURES)/
+	@cp tests/fixtures/kmp_search.c tests/fixtures/messy.c tests/fixtures/messy.h $(FIXTURES)/
 	./$(TARGET) --verbose $(FIXTURES)/kmp_search.c | diff -u tests/expected/expected_kmp.txt -
 	./$(TARGET) --verbose $(FIXTURES)/messy.c | diff -u tests/expected/expected_messy.txt -
 

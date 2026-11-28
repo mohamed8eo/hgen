@@ -108,7 +108,6 @@ identifier even when the filename starts with a digit (`1counter.c` produces
 
 ## Known limitations
 
-- Only one input file per invocation.
 - Updating an existing header only refreshes the prototype block: newly added
   public structs are not copied into a header that already exists.
 - No special handling yet for multi-line macros, complex function pointers, or

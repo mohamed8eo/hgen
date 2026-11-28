@@ -166,7 +166,7 @@ SyncResult sync_file(const char *c_path, int verbose, int dry_run) {
     if (old_text == NULL)
       goto cleanup;
 
-    warn_missing_structs(result, &items, old_text, c_path, hpath);
+    warn_missing_structs(buf, &items, old_text, c_path, hpath);
     if (header_update(old_text, &items, &out) != 0)
       goto cleanup;
 
@@ -177,7 +177,7 @@ SyncResult sync_file(const char *c_path, int verbose, int dry_run) {
     }
   } else {
     created = 1;
-    if (header_build(result, hpath, &items, &out) != 0)
+    if (header_build(buf, result, hpath, &items, &out) != 0)
       goto cleanup;
     if (!dry_run && write_file(hpath, out.data) != 0)
       goto cleanup;

@@ -115,6 +115,13 @@ static int write_hgenignore(const char *dir) {
     goto cleanup;
   snprintf(path, n, "%s/.hgenignore", dir);
 
+  /* Fix #2: never overwrite an existing .hgenignore. */
+  if (access(path, F_OK) == 0) {
+    fprintf(stderr, "hgen: %s already exists; leaving it alone\n", path);
+    rc = 0;
+    goto cleanup;
+  }
+
   text = default_ignore_text();
   if (text == NULL)
     goto cleanup;
@@ -130,10 +137,12 @@ cleanup:
   return rc;
 }
 
-int cmd_init(int argc, char **argv) {
-  const char *target = (argc > 1) ? argv[1] : ".";
+int cmd_init(const char *target) {
   char cwd[PATH_MAX];
   char base[PATH_MAX];
+  char hgen_dir[PATH_MAX];
+  char hgenignore_path[PATH_MAX];
+  const char *t = (target == NULL || target[0] == '\0') ? "." : target;
 
   if (getcwd(cwd, sizeof(cwd)) == NULL) {
     perror("getcwd");
@@ -141,26 +150,30 @@ int cmd_init(int argc, char **argv) {
   }
 
   /* Resolve target against cwd when it is relative. */
-  if (target[0] == '/') {
-    snprintf(base, sizeof(base), "%s", target);
+  if (t[0] == '/') {
+    snprintf(base, sizeof(base), "%s", t);
   } else {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-    snprintf(base, sizeof(base), "%s/%s", cwd, target);
+    snprintf(base, sizeof(base), "%s/%s", cwd, t);
 #pragma GCC diagnostic pop
   }
 
   /* Create the hidden .hgen directory (0755 = rwxr-xr-x). Ignore EEXIST. */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-  snprintf(cwd, sizeof(cwd), "%s/.hgen", base);
+  snprintf(hgen_dir, sizeof(hgen_dir), "%s/.hgen", base);
 #pragma GCC diagnostic pop
-  if (mkdir(cwd, 0755) == -1 && errno != EEXIST) {
+  if (mkdir(hgen_dir, 0755) == -1 && errno != EEXIST) {
     perror("mkdir");
     return EXIT_FAILURE;
   }
 
-  /* Write the default .hgenignore. */
+  /* Write .hgenignore only if it does not already exist. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+  snprintf(hgenignore_path, sizeof(hgenignore_path), "%s/.hgenignore", base);
+#pragma GCC diagnostic pop
   if (write_hgenignore(base) != 0) {
     perror("write .hgenignore");
     return EXIT_FAILURE;

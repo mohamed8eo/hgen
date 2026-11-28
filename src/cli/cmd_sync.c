@@ -46,7 +46,7 @@ int cmd_sync(int argc, char **argv, int verbose, int dry_run) {
     on_file(target, &ctx);
   }
 
-  int total = ctx.stats.created + ctx.stats.updated + ctx.stats.unchanged +
+  int total = ctx.stats.created + ctx.stats.updated +
               ctx.stats.skipped + ctx.stats.errors;
 
   fprintf(stderr,

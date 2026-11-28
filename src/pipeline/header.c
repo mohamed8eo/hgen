@@ -97,16 +97,17 @@ char *header_path(const char *c_path, size_t path_len) {
   return h_path;
 }
 
-int header_build(const char *src, const char *h_path, const ItemList *list,
-                 Buf *out) {
+int header_build(const char *src, const char *stripped, const char *h_path,
+                 const ItemList *list, Buf *out) {
   char *guard = guard_name(h_path);
   if (guard == NULL)
     return -1;
 
   /* Decide which structs go into the header before writing anything, so the
-     stddef include (needed for size_t fields) can be placed at the top. */
+     stddef include (needed for size_t fields) can be placed at the top.
+     Use the stripped text for the decision; comments don't affect it. */
   int need_stddef = 0;
-  unsigned char *emit = struct_flags(src, list, &need_stddef);
+  unsigned char *emit = struct_flags(stripped, list, &need_stddef);
   if (list->len > 0 && emit == NULL) {
     free(guard);
     return -1;
@@ -126,6 +127,7 @@ int header_build(const char *src, const char *h_path, const ItemList *list,
   if (need_stddef && buf_append(out, "#include <stddef.h>\n\n") == -1)
     goto fail;
 
+  /* Copy structs from the ORIGINAL text so comments inside them are kept. */
   if (append_structs(list, emit, src, out) == -1) /* ABOVE the markers */
     goto fail;
 
