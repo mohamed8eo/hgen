@@ -1,3 +1,4 @@
+#include "cmd_init.h"
 #define _DEFAULT_SOURCE
 
 #include <errno.h>
@@ -8,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "core/fileio.h"
+#include "../core/fileio.h"
 
 /*
  * hgen init -- create a .hgen directory and a .hgenignore in the target.
@@ -40,49 +41,48 @@
  */
 static char *default_ignore_text(void) {
   static const char *lines[] = {
-    "# hgenignore -- files and directories hgen should skip",
-    "#",
-    "# Lines starting with '#' are comments.",
-    "# A bare name skips that file or directory everywhere.",
-    "# A name ending in '/' skips a whole directory.",
-    "# A name containing '*' matches any run of characters (glob-style),",
-    "#   e.g. '*.o' skips every object file, 'core.*' skips every core dump.",
-    "#",
-    "",
-    "# --- Version control ---",
-    ".git",
-    ".gitignore",
-    "",
-    "# --- hgen itself ---",
-    ".hgen",
-    ".hgenignore",
-    "",
-    "# --- Build output ---",
-    "build",
-    "build/",
-    "*.o",
-    "*.a",
-    "*.so",
-    "core",
-    "core.*",
-    "",
-    "# --- Tests and fixtures ---",
-    "tests",
-    "tests/",
-    "fixtures",
-    "expected",
-    "",
-    "# --- Dependencies ---",
-    "node_modules",
-    "",
-    "# --- Editors / OS / backups ---",
-    ".vscode",
-    ".idea",
-    ".DS_Store",
-    "*~",
-    "",
-    NULL
-  };
+      "# hgenignore -- files and directories hgen should skip",
+      "#",
+      "# Lines starting with '#' are comments.",
+      "# A bare name skips that file or directory everywhere.",
+      "# A name ending in '/' skips a whole directory.",
+      "# A name containing '*' matches any run of characters (glob-style),",
+      "#   e.g. '*.o' skips every object file, 'core.*' skips every core dump.",
+      "#",
+      "",
+      "# --- Version control ---",
+      ".git",
+      ".gitignore",
+      "",
+      "# --- hgen itself ---",
+      ".hgen",
+      ".hgenignore",
+      "",
+      "# --- Build output ---",
+      "build",
+      "build/",
+      "*.o",
+      "*.a",
+      "*.so",
+      "core",
+      "core.*",
+      "",
+      "# --- Tests and fixtures ---",
+      "tests",
+      "tests/",
+      "fixtures",
+      "expected",
+      "",
+      "# --- Dependencies ---",
+      "node_modules",
+      "",
+      "# --- Editors / OS / backups ---",
+      ".vscode",
+      ".idea",
+      ".DS_Store",
+      "*~",
+      "",
+      NULL};
 
   size_t total = 0;
   for (size_t i = 0; lines[i] != NULL; i++)
@@ -109,11 +109,11 @@ static int write_hgenignore(const char *dir) {
   char *text = NULL;
   int rc = -1;
 
-  size_t n = snprintf(NULL, 0, "%s/.hgenignore", dir) + 1;
+  size_t n = snprintf(NULL, 0, "%s/%s", dir, HGENIGNORE) + 1;
   path = malloc(n);
   if (path == NULL)
     goto cleanup;
-  snprintf(path, n, "%s/.hgenignore", dir);
+  snprintf(path, n, "%s/%s", dir, HGENIGNORE);
 
   /* Fix #2: never overwrite an existing .hgenignore. */
   if (access(path, F_OK) == 0) {
@@ -162,7 +162,7 @@ int cmd_init(const char *target) {
   /* Create the hidden .hgen directory (0755 = rwxr-xr-x). Ignore EEXIST. */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-  snprintf(hgen_dir, sizeof(hgen_dir), "%s/.hgen", base);
+  snprintf(hgen_dir, sizeof(hgen_dir), "%s/%s", base, HGENDIR);
 #pragma GCC diagnostic pop
   if (mkdir(hgen_dir, 0755) == -1 && errno != EEXIST) {
     perror("mkdir");
@@ -172,7 +172,7 @@ int cmd_init(const char *target) {
   /* Write .hgenignore only if it does not already exist. */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-  snprintf(hgenignore_path, sizeof(hgenignore_path), "%s/.hgenignore", base);
+  snprintf(hgenignore_path, sizeof(hgenignore_path), "%s/%s", base, HGENIGNORE);
 #pragma GCC diagnostic pop
   if (write_hgenignore(base) != 0) {
     perror("write .hgenignore");
