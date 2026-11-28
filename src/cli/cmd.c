@@ -1,5 +1,6 @@
 #include "../cli/cmd.h"
 #include "../cli/cmd_sync.h"
+#include "cmd_init.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,8 +93,8 @@ int cmd_run(int argc, char **argv) {
   case CMD_AUTO_SYNC:
     return cmd_sync(argc, argv, verbose, dry_run);
   case CMD_INIT:
-    fprintf(stderr, "%s: 'init' is not implemented yet\n", argv[0]);
-    return EXIT_FAILURE;
+    return cmd_init();
+    // fprintf(stderr, "%s: 'init' is not implemented yet\n", argv[0]);
   case CMD_NONE: {
     char *path = command_path(argc, argv);
     if (path == NULL) {
